@@ -1,0 +1,25 @@
+{
+  "name": "application",
+  "version": "1.0.0",
+  "description": "webapp and tg bot",
+  "main": "index.js",
+  "scripts": {
+    "startWebapp": "node index.js",
+    "startTG": "node tg.js"
+  },
+  "author": "zhuzhelicca",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security",
+    "mongodb": "^6.3.0",
+    "node-telegram-bot-api": "^0.64.0",
+    "path": "^0.12.7",
+    "telegram-inline-calendar": "^1.7.0",
+    "util": "^0.12.5",
+    "xlsx": "^0.18.5"
+  }
+}
