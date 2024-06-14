@@ -15,7 +15,7 @@ const calendar = new Calendar(bot, {
     language: 'ru'
 });
 
-async function  endReg(UID, ridesCount){
+async function endReg(UID, ridesCount){
 	await mongoClient.connect();
 	const db= mongoClient.db("main");
 	const collectionTemp = db.collection("temporaryRegistry");
@@ -129,7 +129,7 @@ try {
 }
 }
 
-async function updateTempRegistry(param, UID, ridesCount = null){
+async function updateTempRegistry(param, UID){
 	try{
 		await mongoClient.connect();
 		const db = mongoClient.db("main");
@@ -202,7 +202,6 @@ async function createTempRegistry(dataToWrite,UID){
 // Нажатие кнопок ~~~~~~~~~~~~~~~~
 
 bot.on('callback_query', async msg => {
-	// return true
 	const chatID = msg.from.id;
 	const user = await getUsersFromDB(chatID);
 	const buttonPressed = msg.data;
@@ -257,6 +256,9 @@ bot.on('message', async msg => {
 		bot.sendMessage(chatID, "Очень красиво. Для регистрации рейса используйте /add");
 		return true;
 	}
+	if (msg.location){
+		bot.sendMessage(chatID, "Хорошее место, всегда хотел там побывать. Для регистрации рейса используйте /add");
+	}
 	if (msg.voice){
 		bot.sendMessage(chatID, "Прекрасный голос. Для регистрации рейса используйте /add");
 		return true;
@@ -267,7 +269,7 @@ bot.on('message', async msg => {
 	}
 	const userExist = await checkUserState(chatID);
 	if (!userExist){
-		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате AA123A');
+		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате A123AA');
 		const newUser = {
 			id: chatID,
 			name: msg.chat.first_name,
@@ -276,7 +278,7 @@ bot.on('message', async msg => {
 		await writeToDB(newUser,'users');
 	} else {
 		const user = await getUsersFromDB(chatID);
-		if (user[0].state == 1){ // добавить проверку msg.text на соответствие номеру. Ждём номер авто
+		if (user[0].state == 1){ // Ждём номер автомобиля
 			const pattern = /^[А-Яа-я][0-9]{3}[А-Яа-я]{2}$/;
 			if (pattern.test(msg.text)) {
 				const updateUser = {
@@ -290,20 +292,19 @@ bot.on('message', async msg => {
 			}
 			
 		}
-		if (user[0].state == 2){ //не в процессе регистрации рейса
+		if (user[0].state == 2){ // Не в процессе регистрации рейса
 			if (message=="/number"){
 				bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате AA123A');
 				updateState(1,user[0]._id);
 			}
 			if (message === "/add"){
-				// bot.sendMessage(chatID, 'Регистрация нового рейса. Укажите месяц. Что бы отменить регистрацию рейса введите /cancel', buttons.regOptions);
 				calendar.startNavCalendar(msg);
 				updateState(4,user[0]._id);
 			} else {
 				bot.sendMessage(chatID, 'Для регистрации рейда введите /add');
 			}
 		}
-		if (user[0].state == 3){//в процессе регистрации рейса
+		if (user[0].state == 3){// В процессе регистрации рейса
 		if (message === "/cancel"){
 			await deleteTempRegistry(chatID);
 			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add');
@@ -312,7 +313,7 @@ bot.on('message', async msg => {
 			bot.sendMessage(chatID, 'Сначала заверши регистрацию рейса /cancel');
 		}
 	}
-	if (user[0].state == 4){//в календаре
+	if (user[0].state == 4){// В календаре
 		if (message === "/cancel"){
 			await deleteTempRegistry(chatID);
 			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add');
@@ -323,7 +324,8 @@ bot.on('message', async msg => {
 		}	
 	}
 	if (user[0].state == 5){// Ждём количество рейсов
-		if (parseInt(message)){
+		const pattern = /^[0-9]{1,3}$/;
+		if (parseInt(message) && pattern.test(message)){
 			bot.sendMessage(chatID,"Регистрация рейса успешна. Что бы добавить ещё один рейс введите /add");
 			updateState(2, user[0]._id);
 			await endReg(chatID, parseInt(message));
@@ -337,9 +339,3 @@ bot.on('message', async msg => {
 		console.log(err);
 	}
 });
-
-/* ToDo 
-1. Объект создания записи для каждого обращения
-2. Сформировать путь кнопками, заполнить объект
-3. Положить объект в mongoDB
-*/
