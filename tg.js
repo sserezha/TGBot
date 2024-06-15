@@ -269,7 +269,7 @@ bot.on('message', async msg => {
 	}
 	const userExist = await checkUserState(chatID);
 	if (!userExist){
-		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате A123AA');
+		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате 123');
 		const newUser = {
 			id: chatID,
 			name: msg.chat.first_name,
@@ -279,29 +279,29 @@ bot.on('message', async msg => {
 	} else {
 		const user = await getUsersFromDB(chatID);
 		if (user[0].state == 1){ // Ждём номер автомобиля
-			const pattern = /^[А-Яа-я][0-9]{3}[А-Яа-я]{2}$/;
+			// const pattern = /^[А-Яа-я][0-9]{3}[А-Яа-я]{2}$/;
+			const pattern = /^[0-9]{3}$/;
 			if (pattern.test(msg.text)) {
 				const updateUser = {
 					state: 2,
 					autoNo: msg.text
 				};
-				bot.sendMessage(chatID, 'Принято. Для регистрации рейда введите /add. Если в номере ошибка или он изменился (текущий: '+msg.text+'), используйте команду /number для изменения');
+				bot.sendMessage(chatID, 'Принято. Для регистрации рейса введите /add. Если в номере ошибка или он изменился (текущий: '+msg.text+'), используйте команду /number для изменения');
 				await writeToDB(updateUser,'users',user[0]._id);
 			} else {
 				bot.sendMessage(chatID, "Неверный формат. Введите правильный номер");
 			}
-			
 		}
 		if (user[0].state == 2){ // Не в процессе регистрации рейса
 			if (message=="/number"){
-				bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате AA123A');
+				bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате 123');
 				updateState(1,user[0]._id);
 			}
 			if (message === "/add"){
 				calendar.startNavCalendar(msg);
 				updateState(4,user[0]._id);
 			} else {
-				bot.sendMessage(chatID, 'Для регистрации рейда введите /add');
+				bot.sendMessage(chatID, 'Для регистрации рейса введите /add');
 			}
 		}
 		if (user[0].state == 3){// В процессе регистрации рейса
@@ -310,7 +310,7 @@ bot.on('message', async msg => {
 			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add');
 			updateState(2,user[0]._id);				
 		} else {
-			bot.sendMessage(chatID, 'Сначала заверши регистрацию рейса /cancel');
+			bot.sendMessage(chatID, 'Сначала завершите регистрацию рейса или отмените её с помощью команды /cancel');
 		}
 	}
 	if (user[0].state == 4){// В календаре
