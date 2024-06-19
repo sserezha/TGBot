@@ -252,21 +252,6 @@ bot.on('message', async msg => {
 	const gotMessageId = msg.message_id;
 	const message = msg.text;
 	const chatID = msg.chat.id;
-	if (msg.photo || msg.video_note || msg.video){
-		bot.sendMessage(chatID, "Очень красиво. Для регистрации рейса используйте /add");
-		return true;
-	}
-	if (msg.location){
-		bot.sendMessage(chatID, "Хорошее место, всегда хотел там побывать. Для регистрации рейса используйте /add");
-	}
-	if (msg.voice){
-		bot.sendMessage(chatID, "Прекрасный голос. Для регистрации рейса используйте /add");
-		return true;
-	}
-	if (msg.sticker){
-		bot.sendMessage(chatID, "Классный стикерпак. Добавлю себе. Для регистрации рейса используйте /add");
-		return true;
-	}
 	const userExist = await checkUserState(chatID);
 	if (!userExist){
 		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате 123');
@@ -277,6 +262,24 @@ bot.on('message', async msg => {
 		};
 		await writeToDB(newUser,'users');
 	} else {
+		if (user[0].state == 6){// Доступ запрещён
+			bot.sendMessage(chatID, "Доступ запрещён. Обратитесь к администратору");
+		}
+		if (msg.photo || msg.video_note || msg.video){
+			bot.sendMessage(chatID, "Очень красиво. Для регистрации рейса используйте /add");
+			return true;
+		}
+		if (msg.location){
+			bot.sendMessage(chatID, "Хорошее место, всегда хотел там побывать. Для регистрации рейса используйте /add");
+		}
+		if (msg.voice){
+			bot.sendMessage(chatID, "Прекрасный голос. Для регистрации рейса используйте /add");
+			return true;
+		}
+		if (msg.sticker){
+			bot.sendMessage(chatID, "Классный стикерпак. Добавлю себе. Для регистрации рейса используйте /add");
+			return true;
+		}
 		const user = await getUsersFromDB(chatID);
 		if (user[0].state == 1){ // Ждём номер автомобиля
 			// const pattern = /^[А-Яа-я][0-9]{3}[А-Яа-я]{2}$/;
