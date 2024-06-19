@@ -262,6 +262,7 @@ bot.on('message', async msg => {
 		};
 		await writeToDB(newUser,'users');
 	} else {
+		const user = await getUsersFromDB(chatID);
 		if (user[0].state == 6){// Доступ запрещён
 			bot.sendMessage(chatID, "Доступ запрещён. Обратитесь к администратору");
 		}
@@ -280,7 +281,7 @@ bot.on('message', async msg => {
 			bot.sendMessage(chatID, "Классный стикерпак. Добавлю себе. Для регистрации рейса используйте /add");
 			return true;
 		}
-		const user = await getUsersFromDB(chatID);
+		
 		if (user[0].state == 1){ // Ждём номер автомобиля
 			// const pattern = /^[А-Яа-я][0-9]{3}[А-Яа-я]{2}$/;
 			const pattern = /^[0-9]{3}$/;
