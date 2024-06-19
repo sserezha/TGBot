@@ -265,6 +265,7 @@ bot.on('message', async msg => {
 		const user = await getUsersFromDB(chatID);
 		if (user[0].state == 6){// Доступ запрещён
 			bot.sendMessage(chatID, "Доступ запрещён. Обратитесь к администратору");
+			return true;
 		}
 		if (msg.photo || msg.video_note || msg.video){
 			bot.sendMessage(chatID, "Очень красиво. Для регистрации рейса используйте /add");
