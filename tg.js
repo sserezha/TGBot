@@ -122,7 +122,7 @@ bot.on('message', async msg => {
 		}
 		if (user[0].state == 2){ // Не в процессе регистрации рейса
 			if (message === "/number"){
-				bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате 123');
+				bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате трёх цифр');
 				mongoFunctions.updateState(1,user[0]._id);
 			}
 			if (message === "/add"){
