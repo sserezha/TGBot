@@ -1,4 +1,3 @@
-const ok = "ok";
 const dotenv=require("dotenv").config();
 const { localsName } = require('ejs');
 const { constants } = require('fs/promises');
@@ -40,7 +39,7 @@ bot.on('callback_query', async msg => {
 	console.log('pressed = ' + buttonPressed);
 	console.log("userState = " + userState);
 	if (userState == 1) {
-		bot.sendMessage(chatID, "Ожидаю номер автомобиля. Напишите текстом номер авто, в формате A111AA");
+		bot.sendMessage(chatID, "Ожидаю номер автомобиля. Напишите текстом номер авто, в формате трёх цифр");
 	}
 	if (userState == 4) {
         res = calendar.clickButtonCalendar(msg);
@@ -83,7 +82,7 @@ bot.on('message', async msg => {
 	const chatID = msg.chat.id;
 	const userExist = await mongoFunctions.checkUserState(chatID);
 	if (!userExist){
-		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате 123');
+		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате трёх цифр');
 		const newUser = {
 			id: chatID,
 			name: msg.chat.first_name,
