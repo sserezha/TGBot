@@ -124,12 +124,13 @@ bot.on('message', async msg => {
 			if (message === "/number"){
 				bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате трёх цифр');
 				mongoFunctions.updateState(1,user[0]._id);
-			}
-			if (message === "/add"){
-				calendar.startNavCalendar(msg);
-				mongoFunctions.updateState(4,user[0]._id);
 			} else {
-				bot.sendMessage(chatID, 'Для регистрации рейса введите /add');
+				if (message === "/add"){
+					calendar.startNavCalendar(msg);
+					mongoFunctions.updateState(4,user[0]._id);
+				} else {
+					bot.sendMessage(chatID, 'Для регистрации рейса введите /add');
+				}
 			}
 		}
 		if (user[0].state == 3){// В процессе регистрации рейса
