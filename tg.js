@@ -162,6 +162,10 @@ bot.on('message', async msg => {
 			bot.sendMessage(chatID,"Укажите количество рейсов цифрой!");
 		}
 	}
+	if (user[0].state == 6){// Доступ запрещён
+		bot.sendMessage(chatID, "Доступ запрещён. Обратитесь к администратору");
+		return true;
+	}
 	}
 	try {mongoFunctions.closeDBConnection()
 	} catch(err){
