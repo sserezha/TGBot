@@ -11,12 +11,6 @@ const app = express();
 const port = 3000;
 const mongoFunctions = require("./mongoFunctions");
 
-function generateCode() {
-    min = Math.ceil(100000);
-    max = Math.floor(999999);
-    return Math.floor(Math.random() * (max - min + 1) + min); 
-  }
-
 app.use(express.json());
 
 app.listen(port, () => {
@@ -50,6 +44,7 @@ bot.on('callback_query', async msg => {
 			const currTempReg = await mongoFunctions.getCurrentTempRegistry(chatID);
 			const reply = await mongoFunctions.createMessageToSend(currTempReg.tempRegState);
 			await bot.sendMessage(chatID, reply.text, reply.keyboard);
+			console.log(reply.keyboard);
         }
     }
 	if (userState == 3){
@@ -58,7 +53,6 @@ bot.on('callback_query', async msg => {
 		const reply = await mongoFunctions.createMessageToSend(currTempReg.tempRegState);
 		await bot.deleteMessage(chatID,messageID);
 		await bot.sendMessage(msg.message.chat.id, "Выбрано: " + replytext);
-		console.log(reply.keyboard);
 		if (reply.keyboard){
 			bot.sendMessage(chatID, reply.text, reply.keyboard);
 		} else {
@@ -74,7 +68,7 @@ bot.on('callback_query', async msg => {
 	}
 });
 
-// сообщение текстом. States: 1 - Ждём номер авто; 2 - не в процессе регистрации рейса; 3 - в процессе регистрации рейса; 4 - в календаре; 5 - ждём кол-во рейсов в чате
+// сообщение текстом. States: 1 - Ждём номер авто; 2 - не в процессе регистрации рейса; 3 - в процессе регистрации рейса; 4 - в календаре; 5 - ждём кол-во рейсов в чате; 6 - banned
 bot.on('message', async msg => {
 	console.log(msg);
 	const gotMessageId = msg.message_id;
@@ -105,7 +99,25 @@ bot.on('message', async msg => {
 				return true;
 			}
 		}
-		
+		if (message == "/code"){
+			const gotCode = await mongoFunctions.requestCode(chatID);
+			if (gotCode.code){
+				await bot.sendMessage(chatID,"Код для входа: "+gotCode.code);
+			} else {
+				await bot.sendMessage(chatID,"Предоставьте номер телефона или свяжитесь с администратором", gotCode.keyboard);
+			}
+			return true;
+		}
+		if (msg.contact){
+			const delKeyboard = {
+				reply_markup:{
+					remove_keyboard:true
+				}
+			}
+			await bot.sendMessage(chatID,"Регистрация успешна",delKeyboard);
+			await mongoFunctions.regUser(chatID, msg.contact.phone_number);
+			return true;
+		}
 		if (user[0].state == 1){ // Ждём номер автомобиля
 			// const pattern = /^[А-Яа-я][0-9]{3}[А-Яа-я]{2}$/;
 			const pattern = /^[0-9]{3}$/;

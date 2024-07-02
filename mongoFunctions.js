@@ -33,6 +33,16 @@ async function endReg(UID, ridesCount){
 		await collectionRegistry.insertOne(toWrite);
 		await collectionTemp.deleteOne({UID:UID});
 }
+
+function generateCode() {
+    min = Math.ceil(100000);
+    max = Math.floor(999999);
+    const code = Math.floor(Math.random() * (max - min + 1) + min);
+    const codeStr = code.toString();
+    const codeText = codeStr.slice(0,3) + '-' + codeStr.slice(3);
+    return {code:code, codeText:codeText}
+  }
+
 async function updateState(newState, id){
 	const newUser = {
 		state: newState
@@ -181,12 +191,54 @@ async function createMessageToSend(currentStateOfRegistry){
 		};
 };
 
+async function isAdmin(userID){
+    await mongoClient.connect();
+    const db = mongoClient.db("main");
+    const users = db.collection("users");
+    const user = await users.findOne({id:userID});
+    if (user.adminFlag == 1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+async function requestCode(chatID){
+    const code = generateCode();
+    await mongoClient.connect();
+    const db = mongoClient.db("main");
+    const users = db.collection("users");
+    const user = await users.findOne({id:chatID});
+    const phone = user.phone;
+    const checkAdminResult = await isAdmin(chatID);
+    if (phone && checkAdminResult){
+        await users.updateOne({id:chatID},{$set:{code:code.code}});
+        return {code:code.codeText};
+    } else {
+        return {keyboard:{
+			reply_markup: {
+				keyboard: 
+                [
+                    [{"text":"Поделиться номером", "callback_data":"share", request_contact: true}]
+                ],resize_keyboard: true
+			}
+        }};
+    }
+};
 async function createTempRegistry(dataToWrite,UID){
 	let enteredData = dataToWrite;
 	let database = 'temporaryRegistry';
 	await writeToDB({"tempRegState":"dateRegistered","UID":UID,"enteredData":enteredData}, database);
 }
+async function regUser(chatID, phone){
+    await mongoClient.connect();
+    const db = mongoClient.db("main");
+    const users = db.collection("users");
+    await users.updateOne({id:chatID},{$set:{phone:phone}});
+};
+
+
 module.exports = {
     endReg,createTempRegistry,createMessageToSend,getCurrentTempRegistry,deleteTempRegistry,
-    updateTempRegistry,getUsersFromDB,updateState,closeDBConnection,checkUserState,getUserState,writeToDB
+    updateTempRegistry,getUsersFromDB,updateState,closeDBConnection,checkUserState,getUserState,writeToDB,requestCode,regUser
 };
