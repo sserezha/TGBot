@@ -9,7 +9,6 @@ async function endReg(UID, ridesCount){
 	const collectionRegistry = db.collection("registry");
 	const collectionUsers = db.collection("users");
 	const user = await collectionUsers.find({id:UID}).toArray();
-	console.log(user);
 	const tempRegFull = await collectionTemp.find({UID:UID}).toArray();
 	const tempReg = tempRegFull[0];
 	let convertedRideType = 1;
