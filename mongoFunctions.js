@@ -261,7 +261,7 @@ async function getRidesForUser(UID){
 	await mongoClient.connect();
 	const db = mongoClient.db("main");
 	const registry = db.collection("registry");
-	let found = await registry.find({UID:UID}).toArray();
+	let found = await registry.find({UID:UID}).sort({"enteredData.date":1}).toArray();
 	let res = "Ваши рейсы: \n"
 	let i=1;
 	if (found[0].UID){
