@@ -19,7 +19,7 @@ async function endReg(UID, ridesCount){
 	const tempReg = tempRegFull[0];
 	let toWrite = {};
 	let rideTypes = {
-		loading: "Погрузыка/Выгрузка",
+		loading: "Погрузка/Выгрузка",
 		defaultRide: "Полный рейс"
 	}
 	if (tempReg.rideType == "defaultRide"){
