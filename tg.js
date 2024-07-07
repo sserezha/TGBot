@@ -157,7 +157,7 @@ bot.on('message', async msg => {
 					calendar.startNavCalendar(msg)
 					mongoFunctions.updateState(7,user[0]._id);
 					return true;
-				} if (message === "/myRides"){
+				} if (message === "/myrides"){
 					let ridesToShow = await mongoFunctions.getRidesForUser(chatID);
 					bot.sendMessage(chatID, ridesToShow);
 					return true;
