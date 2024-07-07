@@ -97,6 +97,10 @@ bot.on('message', async msg => {
 		await mongoFunctions.writeToDB(newUser,'users');
 	} else {
 		const user = await mongoFunctions.getUsersFromDB(chatID);
+		if (user[0].state == 6){// Доступ запрещён
+			bot.sendMessage(chatID, "Доступ запрещён. Обратитесь к администратору");
+			return true;
+		}
 		const responsesForBadMessages = {
 			photo: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
 			video_note: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
@@ -195,10 +199,6 @@ bot.on('message', async msg => {
 		} else {
 			bot.sendMessage(chatID,"Укажите количество рейсов цифрой!");
 		}
-	}
-	if (user[0].state == 6){// Доступ запрещён
-		bot.sendMessage(chatID, "Доступ запрещён. Обратитесь к администратору");
-		return true;
 	}
 	}
 	try {mongoFunctions.closeDBConnection()
