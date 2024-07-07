@@ -264,15 +264,15 @@ async function getRidesForUser(UID){
 	let found = await registry.find({UID:UID}).sort({"enteredData.date":1}).toArray();
 	let res = "Ваши рейсы: \n"
 	let i=1;
-	if (!found[0].UID){
-		return "Не найдено зарегистрированных рейсов";
-	} else {
+	if (found.length>0){
 		for (el in found){
 			let strToAdd = i + ". " + found[el].rideType + ". Количество: " + found[el].enteredData.ridesCount + ", Дата: "+found[el].enteredData.date+"\n" 
 			res=res+strToAdd;
 			i++;
 		}
 		return res;
+	} else {
+		return "Не найдено зарегистрированных рейсов";
 	} 
 }
 
