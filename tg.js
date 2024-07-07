@@ -173,16 +173,16 @@ bot.on('message', async msg => {
 		if (user[0].state == 3){// В процессе регистрации рейса
 		if (message === "/cancel"){
 			await mongoFunctions.deleteTempRegistry(chatID);
-			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add');
+			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load');
 			mongoFunctions.updateState(2,user[0]._id);				
 		} else {
 			bot.sendMessage(chatID, 'Сначала завершите регистрацию рейса или отмените её с помощью команды /cancel');
 		}
 	}
-	if (user[0].state == 4 || user[0].state == 7){// В календаре
+	if (user[0].state == 4 || user[0].state == 7){// В календаре; 7 - календарь для /load
 		if (message === "/cancel"){
 			await mongoFunctions.deleteTempRegistry(chatID);
-			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add');
+			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load');
 			mongoFunctions.updateState(2,user[0]._id);				
 		} else {
 			try { bot.deleteMessage(chatID,gotMessageId);}
