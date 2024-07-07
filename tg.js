@@ -47,6 +47,17 @@ bot.on('callback_query', async msg => {
 			console.log(reply.keyboard);
         }
     }
+	if (userState == 7) {
+        res = calendar.clickButtonCalendar(msg);
+        if (res !== -1) {
+            await bot.sendMessage(msg.message.chat.id, "Дата погрузки/выгрузки: " + res);
+			await mongoFunctions.updateState(5,user[0]._id);
+			await mongoFunctions.createLoadingTempRegistry({"date":res},chatID);
+			const currTempReg = await mongoFunctions.getCurrentTempRegistry(chatID);
+			const reply = await mongoFunctions.createMessageToSend(currTempReg.tempRegState);
+			await bot.sendMessage(chatID, reply.text);
+        }
+    }
 	if (userState == 3){
 		const replytext = await mongoFunctions.updateTempRegistry(buttonPressed,chatID);
 		const currTempReg = await mongoFunctions.getCurrentTempRegistry(chatID);
@@ -68,7 +79,8 @@ bot.on('callback_query', async msg => {
 	}
 });
 
-// сообщение текстом. States: 1 - Ждём номер авто; 2 - не в процессе регистрации рейса; 3 - в процессе регистрации рейса; 4 - в календаре; 5 - ждём кол-во рейсов в чате; 6 - banned
+// сообщение текстом. States: 1 - Ждём номер авто; 2 - не в процессе регистрации рейса; 3 - в процессе регистрации рейса; 4 - в календаре;
+// 5 - ждём кол-во рейсов в чате; 6 - banned; 7 - Создание погрузки/выгрузки
 bot.on('message', async msg => {
 	console.log(msg);
 	const gotMessageId = msg.message_id;
@@ -86,12 +98,12 @@ bot.on('message', async msg => {
 	} else {
 		const user = await mongoFunctions.getUsersFromDB(chatID);
 		const responsesForBadMessages = {
-			photo: "Очень красиво. Для регистрации рейса используйте /add",
-			video_note: "Очень красиво. Для регистрации рейса используйте /add",
-			video: "Очень красиво. Для регистрации рейса используйте /add",
-			location: "Хорошее место, всегда хотел там побывать. Для регистрации рейса используйте /add",
-			voice: "Прекрасный голос. Для регистрации рейса используйте /add",
-			sticker: "Классный стикерпак. Добавлю себе. Для регистрации рейса используйте /add"
+			photo: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+			video_note: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+			video: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+			location: "Хорошее место, всегда хотел там побывать. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+			voice: "Прекрасный голос. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+			sticker: "Классный стикерпак. Добавлю себе. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load"
 		};
 		for (const key in responsesForBadMessages) {
 			if (msg[key]) {
@@ -126,7 +138,7 @@ bot.on('message', async msg => {
 					state: 2,
 					autoNo: msg.text
 				};
-				bot.sendMessage(chatID, 'Принято. Для регистрации рейса введите /add. Если в номере ошибка или он изменился (текущий: '+msg.text+'), используйте команду /number для изменения');
+				bot.sendMessage(chatID, 'Принято. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load. Если в номере ошибка или он изменился (текущий: '+msg.text+'), используйте команду /number для изменения');
 				await mongoFunctions.writeToDB(updateUser,'users',user[0]._id);
 			} else {
 				bot.sendMessage(chatID, "Неверный формат. Введите правильный номер");
@@ -140,10 +152,19 @@ bot.on('message', async msg => {
 				if (message === "/add"){
 					calendar.startNavCalendar(msg);
 					mongoFunctions.updateState(4,user[0]._id);
+					return true;
+				} if (message === "/load"){
+					calendar.startNavCalendar(msg)
+					mongoFunctions.updateState(7,user[0]._id);
+					return true;
+				} if (message === "/myRides"){
+					let ridesToShow = await mongoFunctions.getRidesForUser(chatID);
+					bot.sendMessage(chatID, ridesToShow);
+					return true;
 				} else {
-					bot.sendMessage(chatID, 'Для регистрации рейса введите /add');
+					bot.sendMessage(chatID, 'Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load');
 				}
-			}
+			} 
 		}
 		if (user[0].state == 3){// В процессе регистрации рейса
 		if (message === "/cancel"){
@@ -154,13 +175,14 @@ bot.on('message', async msg => {
 			bot.sendMessage(chatID, 'Сначала завершите регистрацию рейса или отмените её с помощью команды /cancel');
 		}
 	}
-	if (user[0].state == 4){// В календаре
+	if (user[0].state == 4 || user[0].state == 7){// В календаре
 		if (message === "/cancel"){
 			await mongoFunctions.deleteTempRegistry(chatID);
 			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add');
 			mongoFunctions.updateState(2,user[0]._id);				
 		} else {
-			bot.deleteMessage(chatID,gotMessageId);
+			try { bot.deleteMessage(chatID,gotMessageId);}
+			catch(err){console.log(err)}
 			bot.sendMessage(chatID,"Сначала выберите дату");
 		}	
 	}

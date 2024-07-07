@@ -2,6 +2,12 @@ const MongoClient = require('mongodb').MongoClient;
 const url = process.env.URL;
 const mongoClient = new MongoClient(url);
 const dotenv=require("dotenv").config();
+async function createLoadingTempRegistry(dataToWrite,UID){
+	let enteredData = dataToWrite;
+	let database = 'temporaryRegistry';
+	await writeToDB({"tempRegState":"endStage","UID":UID,"enteredData":enteredData,"rideType":"loading"}, database);
+}
+
 async function endReg(UID, ridesCount){
 	await mongoClient.connect();
 	const db= mongoClient.db("main");
@@ -11,24 +17,40 @@ async function endReg(UID, ridesCount){
 	const user = await collectionUsers.find({id:UID}).toArray();
 	const tempRegFull = await collectionTemp.find({UID:UID}).toArray();
 	const tempReg = tempRegFull[0];
-	let convertedRideType = 1;
-	if (tempReg.enteredData.rideType == "Погрузка") {
-		convertedRideType = 2;
-	} else {
-		convertedRideType = 1;
+	let toWrite = {};
+	let rideTypes = {
+		loading: "Погрузыка/Выгрузка",
+		defaultRide: "Полный рейс"
 	}
-	const toWrite = {enteredData:
-		{
-			date:tempReg.enteredData.date,
-			autoNo:user[0].autoNo,
-			woodSpecies:tempReg.enteredData.loadins,
-			sortiment:tempReg.enteredData.sortiments,
-			rideType:convertedRideType,
-			rideFrom:tempReg.enteredData.loadouts,
-			rideTo:tempReg.enteredData.destinations,
-			ridesCount:ridesCount
+	if (tempReg.rideType == "defaultRide"){
+	toWrite = {enteredData:
+			{
+				date:tempReg.enteredData.date,
+				autoNo:user[0].autoNo,
+				woodSpecies:tempReg.enteredData.loadins,
+				sortiment:tempReg.enteredData.sortiments,
+				rideFrom:tempReg.enteredData.loadouts,
+				rideTo:tempReg.enteredData.destinations,
+				ridesCount:ridesCount
+			},
+			rideType: rideTypes[tempReg.rideType],
+			UID:UID
 		}
-		}
+	} else if (tempReg.rideType == "loading"){
+		toWrite = {enteredData:
+			{
+				date:tempReg.enteredData.date,
+				autoNo:user[0].autoNo,
+				woodSpecies:'-',
+				sortiment:"-",
+				rideFrom:"-",
+				rideTo:"-",
+				ridesCount:ridesCount
+			},
+			rideType: rideTypes[tempReg.rideType],
+			UID:UID
+}
+	}
 		await collectionRegistry.insertOne(toWrite);
 		await collectionTemp.deleteOne({UID:UID});
 }
@@ -154,7 +176,7 @@ async function deleteTempRegistry(UID){
 	}
 }
 
-async function getCurrentTempRegistry(UID){
+async function 	getCurrentTempRegistry(UID){
 	await mongoClient.connect();
 	const db = mongoClient.db("main");
 	const collection = db.collection("temporaryRegistry");
@@ -227,7 +249,7 @@ async function requestCode(chatID){
 async function createTempRegistry(dataToWrite,UID){
 	let enteredData = dataToWrite;
 	let database = 'temporaryRegistry';
-	await writeToDB({"tempRegState":"dateRegistered","UID":UID,"enteredData":enteredData}, database);
+	await writeToDB({"tempRegState":"dateRegistered","UID":UID,"enteredData":enteredData,"rideType":"defaultRide"}, database);
 }
 async function regUser(chatID, phone){
     await mongoClient.connect();
@@ -235,9 +257,26 @@ async function regUser(chatID, phone){
     const users = db.collection("users");
     await users.updateOne({id:chatID},{$set:{phone:phone}});
 };
-
+async function getRidesForUser(UID){
+	await mongoClient.connect();
+	const db = mongoClient.db("main");
+	const registry = db.collection("registry");
+	let found = await registry.find({UID:UID}).toArray();
+	let res = "Ваши рейсы: \n"
+	let i=1;
+	if (found[0].UID){
+		for (el in found){
+			let strToAdd = i + ". " + found[el].rideType + ". Количество: " + found[el].enteredData.ridesCount + ", Дата: "+found[el].enteredData.date+"\n" 
+			res=res+strToAdd;
+			i++;
+		}
+		return res;
+	} else {
+		return "Не найдено зарегистрированных рейсов";
+	} 
+}
 
 module.exports = {
     endReg,createTempRegistry,createMessageToSend,getCurrentTempRegistry,deleteTempRegistry,
-    updateTempRegistry,getUsersFromDB,updateState,closeDBConnection,checkUserState,getUserState,writeToDB,requestCode,regUser
+    updateTempRegistry,getUsersFromDB,updateState,closeDBConnection,checkUserState,getUserState,writeToDB,requestCode,regUser,createLoadingTempRegistry, getRidesForUser
 };
