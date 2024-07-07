@@ -197,12 +197,19 @@ bot.on('message', async msg => {
 			mongoFunctions.updateState(2, user[0]._id);
 			await mongoFunctions.endReg(chatID, parseInt(message));
 		} else {
-			bot.sendMessage(chatID,"Укажите количество рейсов цифрой!");
+			if (message == "/cancel"){
+				await mongoFunctions.deleteTempRegistry(chatID);
+				bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load');
+				mongoFunctions.updateState(2,user[0]._id);				
+			} else {
+				bot.sendMessage(chatID,"Укажите количество рейсов цифрой!");
+			}
 		}
 	}
-	}
-	try {mongoFunctions.closeDBConnection()
+	try {
+		mongoFunctions.closeDBConnection();
 	} catch(err){
 		console.log(err);
 	}
+}
 });
