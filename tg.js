@@ -16,7 +16,26 @@ app.use(express.json());
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
+const responsesForBadMessages = {
+	photo: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+	video_note: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+	video: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+	location: "Хорошее место, всегда хотел там побывать. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+	voice: "Прекрасный голос. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
+	sticker: "Классный стикерпак. Добавлю себе. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load"
+}
 
+const phrases = {
+	cancel:"Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load",
+	autoNoWait:"Ожидаю номер автомобиля. Напишите текстом номер авто, в формате трёх цифр",
+	accessDnied:"Доступ запрещён. Обратитесь к администратору",
+	contactRequest: "Предоставьте номер телефона или свяжитесь с администратором",
+	successUserReg: "Регистрация успешна",
+	wrongAutoNo:"Неверный формат. Введите правильный номер",
+	notACommand:'Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load',
+	whileRegisteringRaid: 'Сначала завершите регистрацию рейса или отмените её с помощью команды /cancel',
+	successRaidReg:"Регистрация рейса успешна. Что бы добавить ещё один рейс введите /add",
+}
 
 const calendar = new Calendar(bot, {
     date_format: 'YYYY-MM-DD',
@@ -33,13 +52,13 @@ bot.on('callback_query', async msg => {
 	console.log('pressed = ' + buttonPressed);
 	console.log("userState = " + userState);
 	if (userState == 1) {
-		bot.sendMessage(chatID, "Ожидаю номер автомобиля. Напишите текстом номер авто, в формате трёх цифр");
+		bot.sendMessage(chatID, phrases.autoNoWait);
 	}
 	if (userState == 4) {
         res = calendar.clickButtonCalendar(msg);
         if (res !== -1) {
             await bot.sendMessage(msg.message.chat.id, "Дата рейса: " + res);
-			await mongoFunctions.updateState(3,user[0]._id);
+			await mongoFunctions.updateState(3,user._id);
 			await mongoFunctions.createTempRegistry({"date":res},chatID);
 			const currTempReg = await mongoFunctions.getCurrentTempRegistry(chatID);
 			const reply = await mongoFunctions.createMessageToSend(currTempReg.tempRegState);
@@ -51,7 +70,7 @@ bot.on('callback_query', async msg => {
         res = calendar.clickButtonCalendar(msg);
         if (res !== -1) {
             await bot.sendMessage(msg.message.chat.id, "Дата погрузки/выгрузки: " + res);
-			await mongoFunctions.updateState(5,user[0]._id);
+			await mongoFunctions.updateState(5,user._id);
 			await mongoFunctions.createLoadingTempRegistry({"date":res},chatID);
 			const currTempReg = await mongoFunctions.getCurrentTempRegistry(chatID);
 			const reply = await mongoFunctions.createMessageToSend(currTempReg.tempRegState);
@@ -68,7 +87,7 @@ bot.on('callback_query', async msg => {
 			bot.sendMessage(chatID, reply.text, reply.keyboard);
 		} else {
 			bot.sendMessage(chatID, reply.text);
-			mongoFunctions.updateState(5,user[0]._id);
+			mongoFunctions.updateState(5,user._id);
 		}
 	}
 	await bot.answerCallbackQuery(msg.id);
@@ -87,129 +106,112 @@ bot.on('message', async msg => {
 	const message = msg.text;
 	const chatID = msg.chat.id;
 	const userExist = await mongoFunctions.checkUserState(chatID);
+	const user = await mongoFunctions.getUsersFromDB(chatID);
 	if (!userExist){
-		bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате трёх цифр');
-		const newUser = {
-			id: chatID,
-			name: msg.chat.first_name,
-			state: 1
-		};
-		await mongoFunctions.writeToDB(newUser,'users');
+		bot.sendMessage(chatID, phrases.autoNoWait);
+		mongoFunctions.initUser(chatID, msg.chat.first_name)
 	} else {
-		const user = await mongoFunctions.getUsersFromDB(chatID);
-		if (user[0].state == 6){// Доступ запрещён
-			bot.sendMessage(chatID, "Доступ запрещён. Обратитесь к администратору");
-			return true;
-		}
-		const responsesForBadMessages = {
-			photo: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-			video_note: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-			video: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-			location: "Хорошее место, всегда хотел там побывать. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-			voice: "Прекрасный голос. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-			sticker: "Классный стикерпак. Добавлю себе. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load"
-		};
-		for (const key in responsesForBadMessages) {
-			if (msg[key]) {
-				bot.sendMessage(chatID, responsesForBadMessages[key]);
-				return true;
-			}
-		}
-		if (message == "/code"){
-			const gotCode = await mongoFunctions.requestCode(chatID);
-			if (gotCode.code){
-				await bot.sendMessage(chatID,"Код для входа: "+gotCode.code);
-			} else {
-				await bot.sendMessage(chatID,"Предоставьте номер телефона или свяжитесь с администратором", gotCode.keyboard);
-			}
-			return true;
-		}
 		if (msg.contact){
 			const delKeyboard = {
 				reply_markup:{
 					remove_keyboard:true
 				}
 			}
-			await bot.sendMessage(chatID,"Регистрация успешна",delKeyboard);
+			await bot.sendMessage(chatID,phrases.successUserReg,delKeyboard);
 			await mongoFunctions.regUser(chatID, msg.contact.phone_number);
 			return true;
 		}
-		if (user[0].state == 1){ // Ждём номер автомобиля
+		if (user.state == 6){// Доступ запрещён
+			bot.sendMessage(chatID, phrases.accessDnied);
+			return true;
+		}
+
+		for (const key in responsesForBadMessages) {
+			if (msg[key]) {
+				bot.sendMessage(chatID, responsesForBadMessages[key]);
+				return true;
+			};
+		}
+		if (message == "/code"){
+			const gotCode = await mongoFunctions.requestCode(chatID);
+			if (gotCode.code){
+				await bot.sendMessage(chatID,"Код для входа: "+gotCode.code);
+			} else {
+				await bot.sendMessage(chatID, phrases.contactRequest , gotCode.keyboard);
+			}
+			return true;
+		}
+
+		if (user.state == 1){ // Ждём номер автомобиля
 			// const pattern = /^[А-Яа-я][0-9]{3}[А-Яа-я]{2}$/;
 			const pattern = /^[0-9]{3}$/;
-			if (pattern.test(msg.text)) {
-				const updateUser = {
-					state: 2,
-					autoNo: msg.text
-				};
-				bot.sendMessage(chatID, 'Принято. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load. Если в номере ошибка или он изменился (текущий: '+msg.text+'), используйте команду /number для изменения');
-				await mongoFunctions.writeToDB(updateUser,'users',user[0]._id);
+			if (pattern.test(message)) {
+				mongoFunctions.updateAutoNo(chatID, message);
+				mongoFunctions.updateState(2,user._id)
+				bot.sendMessage(chatID, 'Принято. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load. Если в номере ошибка или он изменился (текущий: '+message+'), используйте команду /number для изменения');
 			} else {
-				bot.sendMessage(chatID, "Неверный формат. Введите правильный номер");
+				bot.sendMessage(chatID, phrases.wrongAutoNo);
 			}
 		}
-		if (user[0].state == 2){ // Не в процессе регистрации рейса
+	
+		if (user.state == 2){ // Не в процессе регистрации рейса
 			if (message === "/number"){
-				bot.sendMessage(chatID, 'Введите номер вашего автомобиля в формате трёх цифр');
-				mongoFunctions.updateState(1,user[0]._id);
+				bot.sendMessage(chatID, phrases.autoNoWait);
+				mongoFunctions.updateState(1,user._id);
 			} else {
 				if (message === "/add"){
 					calendar.startNavCalendar(msg);
-					mongoFunctions.updateState(4,user[0]._id);
+					mongoFunctions.updateState(4,user._id);
 					return true;
 				} if (message === "/load"){
 					calendar.startNavCalendar(msg)
-					mongoFunctions.updateState(7,user[0]._id);
+					mongoFunctions.updateState(7,user._id);
 					return true;
 				} if (message === "/myrides"){
 					let ridesToShow = await mongoFunctions.getRidesForUser(chatID);
 					bot.sendMessage(chatID, ridesToShow);
 					return true;
 				} else {
-					bot.sendMessage(chatID, 'Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load');
+					bot.sendMessage(chatID, phrases.notACommand);
 				}
-			} 
+			}
 		}
-		if (user[0].state == 3){// В процессе регистрации рейса
-		if (message === "/cancel"){
-			await mongoFunctions.deleteTempRegistry(chatID);
-			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load');
-			mongoFunctions.updateState(2,user[0]._id);				
-		} else {
-			bot.sendMessage(chatID, 'Сначала завершите регистрацию рейса или отмените её с помощью команды /cancel');
-		}
-	}
-	if (user[0].state == 4 || user[0].state == 7){// В календаре; 7 - календарь для /load
-		if (message === "/cancel"){
-			await mongoFunctions.deleteTempRegistry(chatID);
-			bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load');
-			mongoFunctions.updateState(2,user[0]._id);				
-		} else {
-			try { bot.deleteMessage(chatID,gotMessageId);}
-			catch(err){console.log(err)}
-			bot.sendMessage(chatID,"Сначала выберите дату");
-		}	
-	}
-	if (user[0].state == 5){// Ждём количество рейсов
-		const pattern = /^[0-9]{1,3}$/;
-		if (parseInt(message) && pattern.test(message)){
-			bot.sendMessage(chatID,"Регистрация рейса успешна. Что бы добавить ещё один рейс введите /add");
-			mongoFunctions.updateState(2, user[0]._id);
-			await mongoFunctions.endReg(chatID, parseInt(message));
-		} else {
-			if (message == "/cancel"){
+		if (user.state == 3){// В процессе регистрации рейса
+			if (message === "/cancel"){
 				await mongoFunctions.deleteTempRegistry(chatID);
-				bot.sendMessage(chatID, 'Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load');
-				mongoFunctions.updateState(2,user[0]._id);				
+				bot.sendMessage(chatID, phrases.cancel);
+				mongoFunctions.updateState(2,user._id);				
 			} else {
-				bot.sendMessage(chatID,"Укажите количество рейсов цифрой!");
+				bot.sendMessage(chatID, phrases.whileRegisteringRaid);
+			}
+		}
+		if (user.state == 4 || user.state == 7){// В календаре; 7 - календарь для /load
+			if (message === "/cancel"){
+				await mongoFunctions.deleteTempRegistry(chatID);
+				bot.sendMessage(chatID, phrases.cancel);
+				mongoFunctions.updateState(2,user._id);				
+			} else {
+				try { bot.deleteMessage(chatID,gotMessageId);}
+				catch(err){console.log(err)}
+				bot.sendMessage(chatID, phrases.whileRegisteringRaid);
+			}
+		}
+		if (user.state == 5){// Ждём количество рейсов
+			const pattern = /^[0-9]{1,3}$/;
+			if (parseInt(message) && pattern.test(message)){
+				bot.sendMessage(chatID, phrases.successRaidReg);
+				mongoFunctions.updateState(2, user._id);
+				await mongoFunctions.endReg(chatID, parseInt(message));
+			} else {
+				if (message == "/cancel"){
+					await mongoFunctions.deleteTempRegistry(chatID);
+					bot.sendMessage(chatID, phrases.cancel);
+					mongoFunctions.updateState(2,user._id);				
+				} else {
+					bot.sendMessage(chatID, "Укажите количество рейсов цифрой!");
+				}
 			}
 		}
 	}
-	try {
-		mongoFunctions.closeDBConnection();
-	} catch(err){
-		console.log(err);
-	}
-}
+	mongoFunctions.closeDBConnection();
 });

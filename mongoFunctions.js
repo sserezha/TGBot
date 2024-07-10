@@ -8,6 +8,20 @@ async function createLoadingTempRegistry(dataToWrite,UID){
 	await writeToDB({"tempRegState":"endStage","UID":UID,"enteredData":enteredData,"rideType":"loading"}, database);
 }
 
+async function initUser(id, name, autoNo = null, beforeBan = null, phone = null, adminFlag = 0, code = null){
+	await mongoClient.connect();
+	const db= mongoClient.db("main");
+	const users = db.collection("users");
+	users.insertOne({id:id, name:name, autoNo:autoNo, beforeBan:beforeBan, phone:phone, adminFlag:adminFlag, code:code})
+}
+
+async function updateAutoNo(id,autoNo){
+	await mongoClient.connect();
+	const db= mongoClient.db("main");
+	const users = db.collection("users");
+	users.updateOne({id:id},{$set:{autoNo:autoNo}});
+}
+
 async function endReg(UID, ridesCount){
 	await mongoClient.connect();
 	const db= mongoClient.db("main");
@@ -141,7 +155,7 @@ try {
 			result.push(item);
 		}
 	});
-	return result;
+	return result[0];
 	}catch(err) {
 	console.log(err);
 }
@@ -278,5 +292,6 @@ async function getRidesForUser(UID){
 
 module.exports = {
     endReg,createTempRegistry,createMessageToSend,getCurrentTempRegistry,deleteTempRegistry,
-    updateTempRegistry,getUsersFromDB,updateState,closeDBConnection,checkUserState,getUserState,writeToDB,requestCode,regUser,createLoadingTempRegistry, getRidesForUser
+    updateTempRegistry,getUsersFromDB,updateState,closeDBConnection,checkUserState,getUserState,requestCode,regUser,createLoadingTempRegistry, getRidesForUser, initUser,
+	updateAutoNo
 };
