@@ -106,6 +106,10 @@ bot.on('message', async msg => {
 				return true;
 			};
 		}
+		if (message== "/help"){
+			await bot.sendMessage(chatID, phrases.helpPhrase);
+			return true;
+		}
 		if (message == "/code"){
 			const gotCode = await mongoFunctions.requestCode(chatID);
 			if (gotCode.code){
