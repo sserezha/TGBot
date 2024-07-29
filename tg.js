@@ -6,36 +6,8 @@ const Calendar = require('telegram-inline-calendar');
 const { Collection } = require('mongodb');
 const token = process.env.TOKEN;
 const bot = new telegramApi(token, {polling: true});
-const express = require('express');
-const app = express();
-const port = 3000;
 const mongoFunctions = require("./mongoFunctions");
-
-app.use(express.json());
-
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-});
-const responsesForBadMessages = {
-	photo: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-	video_note: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-	video: "Очень красиво. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-	location: "Хорошее место, всегда хотел там побывать. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-	voice: "Прекрасный голос. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load",
-	sticker: "Классный стикерпак. Добавлю себе. Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load"
-}
-
-const phrases = {
-	cancel:"Регистрация нового рейса отменена. Что бы начать заново введите /add. Для указания погрузки/выгрузки введите /load",
-	autoNoWait:"Ожидаю номер автомобиля. Напишите текстом номер авто, в формате трёх цифр",
-	accessDnied:"Доступ запрещён. Обратитесь к администратору",
-	contactRequest: "Предоставьте номер телефона или свяжитесь с администратором",
-	successUserReg: "Регистрация успешна",
-	wrongAutoNo:"Неверный формат. Введите правильный номер",
-	notACommand:'Для регистрации рейса введите /add. Для указания погрузки/выгрузки введите /load',
-	whileRegisteringRaid: 'Сначала завершите регистрацию рейса или отмените её с помощью команды /cancel',
-	successRaidReg:"Регистрация рейса успешна. Что бы добавить ещё один рейс введите /add",
-}
+const { phrases, responsesForBadMessages } = require("./phrases");
 
 const calendar = new Calendar(bot, {
     date_format: 'YYYY-MM-DD',
@@ -89,6 +61,8 @@ bot.on('callback_query', async msg => {
 			bot.sendMessage(chatID, reply.text);
 			mongoFunctions.updateState(5,user._id);
 		}
+	} else {
+		bot.sendMessage(chatID, phrases.notACommand);
 	}
 	await bot.answerCallbackQuery(msg.id);
 	try {
@@ -99,7 +73,7 @@ bot.on('callback_query', async msg => {
 });
 
 // сообщение текстом. States: 1 - Ждём номер авто; 2 - не в процессе регистрации рейса; 3 - в процессе регистрации рейса; 4 - в календаре;
-// 5 - ждём кол-во рейсов в чате; 6 - banned; 7 - Создание погрузки/выгрузки
+// 5 - ждём кол-во рейсов в чате; 6 - banned; 7 - Создание погрузки/выгрузки (календарь)
 bot.on('message', async msg => {
 	console.log(msg);
 	const gotMessageId = msg.message_id;
@@ -208,7 +182,7 @@ bot.on('message', async msg => {
 					bot.sendMessage(chatID, phrases.cancel);
 					mongoFunctions.updateState(2,user._id);				
 				} else {
-					bot.sendMessage(chatID, "Укажите количество рейсов цифрой!");
+					bot.sendMessage(chatID, phrases.wrongRidesCount);
 				}
 			}
 		}
