@@ -20,9 +20,6 @@ bot.on('callback_query', async msg => {
 	const buttonPressed = msg.data;
 	const userState = await mongoFunctions.getUserState(chatID);
 	const messageID = msg.message.message_id;
-	console.log('chatID = ' + chatID);
-	console.log('pressed = ' + buttonPressed);
-	console.log("userState = " + userState);
 	if (userState == 1) {
 		bot.sendMessage(chatID, phrases.autoNoWait);
 	}
@@ -35,7 +32,6 @@ bot.on('callback_query', async msg => {
 			const currTempReg = await mongoFunctions.getCurrentTempRegistry(chatID);
 			const reply = await mongoFunctions.createMessageToSend(currTempReg.tempRegState);
 			await bot.sendMessage(chatID, reply.text, reply.keyboard);
-			console.log(reply.keyboard);
         }
     }
 	if (userState == 7) {
